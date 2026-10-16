@@ -55,6 +55,9 @@ To measure your own PC: `tools/bench.sh` (about 5 min). It prints a block at the
 
 - NVIDIA RTX 30/40/50 series (or an Ampere+ workstation card) with 16 GB+ VRAM, driver 580+
 - 64 GB RAM
+- A CPU that isn't slow. It matters about as much as the GPU: experts that miss the GPU cache are computed on the CPU, so an older few-core
+  CPU with DDR4 (say 8 Zen 2 cores, AVX2 only) can set the speed. One user measured about 70 ms a pass on that, against about 16 ms on a
+  16-core 7950X3D, with the GPU at 33%.
 - ~90 GB free disk (75 GB for fast mode), SSD strongly recommended
 - Linux x86-64, Ubuntu 22.04+ or similar (tested on 22.04 and 24.04). No Windows yet, and WSL is untested.
 
@@ -101,6 +104,12 @@ To switch: `tools/download.sh --fast` then `tools/serve.sh --fast` (drop `--fast
 - Download stopped: rerun `./setup.sh`.
 - "No NVIDIA driver found" / "580 or newer is needed": update the driver (Ubuntu: `sudo apt install nvidia-driver-595`), reboot.
 - Port 8080 in use: it's probably already running, or use `tools/serve.sh 8090`.
+- Download sits at 0 MB/s, then "Connection reset by peer": on some networks IPv6 to Hugging Face's CDN (us.aws.cdn.hf.co) is broken while IPv4
+  works (`curl -4` does). Until an engine that falls back to IPv4 ships, download with `hf download glyd/Qwen3.8-Flash-Next-hummingbird --exclude "pack/*"`
+  (`--exclude "precise/*"` for fast mode; `pip install -U huggingface_hub` gives you `hf`) into the same `HF_HUB_CACHE`, then rerun `./setup.sh`: it finds
+  the files and downloads nothing. Once that engine is out, `GLYD_IPV4=1 ./setup.sh` forces IPv4.
+- Slower than the numbers above: check the CPU (see What you need), and the context. On a 16 GB card a bigger `GLYD_CTX` takes VRAM from the expert
+  cache, so it can be slower: one user saw 11-15% slower at 131,072 than at 32,768 (the default).
 
 Anything else: open an [issue](https://github.com/surya-koritala/glyd-qwen-3.8-flash/issues) with what it printed. Security stuff goes
 privately via [SECURITY.md](SECURITY.md).
